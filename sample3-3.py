@@ -5,6 +5,7 @@ from sklearn.preprocessing import StandardScaler
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import os
+from datetime import timedelta
 
 # Spotify API 認証情報
 CLIENT_ID = 'f48dda32a0544428a6808ffc4a03e5ec'
@@ -26,6 +27,9 @@ app.secret_key = os.urandom(24)  # セッション用のシークレットキー
 # 使用する特徴量
 FEATURES = ['mode', 'acousticness', 'danceability', 'energy', 'valence', 'instrumentalness', 'speechiness']
 
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)
+app.permanent_session_lifetime = timedelta(minutes=60)
+
 # ジャンルごとのCSVファイルの読み込み関数
 def load_genre_data(genre):
     try:
@@ -40,8 +44,10 @@ def create_spotify_oauth():
 
 @app.route('/')
 def index():
-    # 認証されているか確認
-    if 'token_info' in session:
+    # セッションにトークン情報があるかを確認
+    token_info = session.get('token_info', None)
+    if token_info:
+        print(f"Session token_info: {session['token_info']}")  # デバッグ用出力
         print('User is already authenticated.')
         return render_template('index3.html')
     else:
