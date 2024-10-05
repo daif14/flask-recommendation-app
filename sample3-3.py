@@ -5,7 +5,6 @@ from sklearn.preprocessing import StandardScaler
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import os
-from datetime import timedelta
 
 # Spotify API 認証情報
 CLIENT_ID = 'f48dda32a0544428a6808ffc4a03e5ec'
@@ -27,9 +26,6 @@ app.secret_key = os.urandom(24)  # セッション用のシークレットキー
 # 使用する特徴量
 FEATURES = ['mode', 'acousticness', 'danceability', 'energy', 'valence', 'instrumentalness', 'speechiness']
 
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)
-app.permanent_session_lifetime = timedelta(minutes=60)
-
 # ジャンルごとのCSVファイルの読み込み関数
 def load_genre_data(genre):
     try:
@@ -44,10 +40,8 @@ def create_spotify_oauth():
 
 @app.route('/')
 def index():
-    # セッションにトークン情報があるかを確認
-    token_info = session.get('token_info', None)
-    if token_info:
-        print(f"Session token_info: {session['token_info']}")  # デバッグ用出力
+    # 認証されているか確認
+    if 'token_info' in session:
         print('User is already authenticated.')
         return render_template('index3.html')
     else:
@@ -74,18 +68,12 @@ def callback():
         
         print(f'Received code: {code}')
         token_info = sp_oauth.get_access_token(code)
-        if token_info:
-            print(f'Token info: {token_info}')
-            session['token_info'] = token_info
-        else:
-            print('Failed to retrieve token.')
-            return redirect(url_for('login'))
+        session['token_info'] = token_info
     except Exception as e:
         print(f'Error during token retrieval: {e}')
         return redirect(url_for('login'))
     
     return redirect(url_for('index'))
-
 
 def get_spotify_client():
     token_info = session.get('token_info', None)
@@ -268,5 +256,4 @@ def create_playlist():
     return playlist_df.to_json(orient='records')
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 8888))  # PORT環境変数がない場合はデフォルトで5000を使用
-    app.run(debug=True, host='0.0.0.0', port=port)
+    app.run(debug=True, port=8888)
