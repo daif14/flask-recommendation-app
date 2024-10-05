@@ -68,12 +68,18 @@ def callback():
         
         print(f'Received code: {code}')
         token_info = sp_oauth.get_access_token(code)
-        session['token_info'] = token_info
+        if token_info:
+            print(f'Token info: {token_info}')
+            session['token_info'] = token_info
+        else:
+            print('Failed to retrieve token.')
+            return redirect(url_for('login'))
     except Exception as e:
         print(f'Error during token retrieval: {e}')
         return redirect(url_for('login'))
     
     return redirect(url_for('index'))
+
 
 def get_spotify_client():
     token_info = session.get('token_info', None)
