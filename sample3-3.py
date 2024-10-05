@@ -256,5 +256,5 @@ def create_playlist():
     return playlist_df.to_json(orient='records')
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))  # PORT環境変数がない場合はデフォルトで5000を使用
+    port = int(os.getenv('PORT', 8888))  # PORT環境変数がない場合はデフォルトで5000を使用
     app.run(debug=True, host='0.0.0.0', port=port)
