@@ -22,8 +22,6 @@
             <option value="hip-hop">hip-hop</option>
             <option value="jazz">jazz</option>
             <option value="edm">edm</option>
-            <!--option value="reggae">Reggae</option -->
-            <!--option value="metal">Metal</option -->
         </select>
         <button type="submit">決定</button>
     </form>
@@ -48,10 +46,19 @@
     </div>
 
     <script>
+        // ジャンル選択フォームの送信イベント
         document.getElementById('genreForm').addEventListener('submit', function(event) {
             event.preventDefault();
 
             const genre = document.getElementById('genre').value;
+
+            // リセット処理：以前の推薦曲リストとプレイリストを非表示にし、リストをクリアする
+            document.getElementById('recommendationSection').style.display = 'none';
+            document.getElementById('playlistSection').style.display = 'none';
+            document.getElementById('userRecommendations').innerHTML = '';
+            document.getElementById('otherRecommendations').innerHTML = '';
+            document.getElementById('selectedTrack').innerHTML = '';
+            document.getElementById('playlist').innerHTML = '';
 
             // フォームが送信されたら、推薦曲セクションを表示する
             document.getElementById('recommendationSection').style.display = 'block';
