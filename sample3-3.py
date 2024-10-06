@@ -189,6 +189,14 @@ def recommend_from_other_genres(user_scaled_features, excluded_genre, excluded_i
 def recommend():
     # ユーザが指定したジャンルを取得
     genre = request.args.get('genre')
+
+    # 前のジャンル選択時の推薦結果をリセット
+    if 'last_genre' in session and session['last_genre'] != genre:
+        session.pop('recommendations', None)  # 推薦結果をリセット
+        session.pop('selected_track_id', None)  # 選択された曲もリセット
+
+    # 新しいジャンルをセッションに保存
+    session['last_genre'] = genre
     
     # 指定されたジャンルのデータをロード
     genre_data = load_genre_data(genre)
