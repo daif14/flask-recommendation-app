@@ -9,7 +9,7 @@ import os
 # Spotify API 認証情報
 CLIENT_ID = 'f48dda32a0544428a6808ffc4a03e5ec'
 CLIENT_SECRET = '898a3fa1764d4471aa965cc8044ce02b'
-REDIRECT_URI = 'https://your-app-name.onrender.com/callback'
+REDIRECT_URI = 'https://flask-recommendation-app.onrender.com/callback'
 
 # スコープに再生履歴を含める
 SCOPE = 'user-read-recently-played'
