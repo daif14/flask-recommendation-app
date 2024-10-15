@@ -9,7 +9,7 @@ import os
 # Spotify API 認証情報
 CLIENT_ID = 'f48dda32a0544428a6808ffc4a03e5ec'
 CLIENT_SECRET = '898a3fa1764d4471aa965cc8044ce02b'
-REDIRECT_URI = 'https://flask-recommendation-app.onrender.com/callback'
+REDIRECT_URI = 'http://localhost:8888/callback'
 
 # スコープに再生履歴を含める
 SCOPE = 'user-read-recently-played'
@@ -24,7 +24,7 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)  # セッション用のシークレットキーを設定
 
 # 使用する特徴量
-FEATURES = ['mode', 'acousticness', 'danceability', 'energy', 'valence', 'instrumentalness', 'speechiness']
+FEATURES = ['key', 'energy', 'mode', 'acousticness', 'danceability', 'valence', 'instrumentalness', 'speechiness', 'loudness', 'tempo']
 
 # ジャンルごとのCSVファイルの読み込み関数
 def load_genre_data(genre):
@@ -91,7 +91,6 @@ def get_spotify_client():
 
     return spotipy.Spotify(auth=token_info['access_token'])
 
-
 # Spotify APIを使用してユーザの再生履歴を取得
 def get_user_recent_tracks():
     sp = get_spotify_client()
@@ -108,13 +107,16 @@ def get_user_recent_tracks():
                 'track_name': item['track']['name'],
                 'artist_name': item['track']['artists'][0]['name'],
                 'id': item['track']['id'],
+                'key': feature['key'],
+                'energy': feature['energy'],
                 'mode': feature['mode'],
                 'acousticness': feature['acousticness'],
                 'danceability': feature['danceability'],
-                'energy': feature['energy'],
                 'valence': feature['valence'],
                 'instrumentalness': feature['instrumentalness'],
-                'speechiness': feature['speechiness']
+                'speechiness': feature['speechiness'],
+                'loudness': feature['loudness'],
+                'tempo': feature['tempo']
             })
     
     return pd.DataFrame(track_info), track_ids  # IDも返す
@@ -135,11 +137,11 @@ def recommend_songs_for_user(user_scaled_features, genre_data, genre, excluded_i
     # ジャンルの特徴量データ
     genre_features = genre_data[FEATURES]
     
-    # コサイン類似度の計算
-    cosine_sim = cosine_similarity(user_scaled_features, genre_features)
+    # コサイン類似度の計算 (複数曲の平均特徴量を使用)
+    cosine_sim = cosine_similarity(user_scaled_features.mean(axis=0).values.reshape(1, -1), genre_features)
     
     # 類似度の高い楽曲を上位5件取得
-    sim_scores = cosine_sim[0]  # 最初のユーザ楽曲との類似度のみ使用
+    sim_scores = cosine_sim[0]  # 平均値を使用して全楽曲との類似度を計算
     top_indices = sim_scores.argsort()[::-1]  # 類似度の高い順にソート
     
     recommendations = []
@@ -153,7 +155,7 @@ def recommend_songs_for_user(user_scaled_features, genre_data, genre, excluded_i
             excluded_ids.add(track_id)
         
         # 推薦する楽曲は最大5件とする
-        if len(recommendations) >= 5:
+        if len(recommendations) >= 6:
             break
     
     return pd.DataFrame(recommendations)
@@ -224,44 +226,6 @@ def recommend():
     all_recommendations = pd.concat([genre_recommendations, other_genre_recommendations])
     
     return all_recommendations.to_json(orient='records')
-
-@app.route('/create_playlist', methods=['GET'])
-def create_playlist():
-    selected_track_id = request.args.get('selected_track_id')
-    
-    # 選択した曲の特徴量を取得
-    selected_track_feature = sp.audio_features([selected_track_id])[0]
-    
-    # 他の楽曲の中からコサイン類似度に基づいて推薦
-    all_genres = ['pop', 'rock', 'hip-hop', 'jazz', 'edm']
-    playlist = []
-    excluded_ids = set([selected_track_id])  # 選択された曲は除外
-    
-    for genre in all_genres:
-        genre_data = load_genre_data(genre)
-        if genre_data is not None and not genre_data.empty:
-            genre_features = genre_data[FEATURES]
-            
-            # コサイン類似度の計算
-            selected_track_features_df = pd.DataFrame([selected_track_feature], columns=FEATURES)
-            cosine_sim = cosine_similarity(selected_track_features_df, genre_features)
-            
-            sim_scores = cosine_sim[0]
-            top_indices = sim_scores.argsort()[::-1]  # 類似度の高い順にソート
-            
-            for idx in top_indices:
-                track_id = genre_data.iloc[idx]['id']
-                if track_id not in excluded_ids:  # 重複チェック
-                    recommendation = genre_data[['track_name', 'artist_name', 'id']].iloc[idx]
-                    recommendation['source_genre'] = genre
-                    recommendation['track_url'] = f"https://open.spotify.com/track/{track_id}"
-                    playlist.append(recommendation)
-                    excluded_ids.add(track_id)  # 選んだ曲を除外リストに追加
-                    break  # 各ジャンルから1曲だけ追加
-    
-    # プレイリストをDataFrameに変換してからJSONに変換
-    playlist_df = pd.DataFrame(playlist)
-    return playlist_df.to_json(orient='records')
 
 if __name__ == '__main__':
     app.run(debug=True, port=8888)

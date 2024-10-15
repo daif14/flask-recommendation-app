@@ -4,45 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Music Recommendation</title>
-    <style>
-        #recommendationSection, #playlistSection {
-            display: none;
-        }
-    </style>
+    <!-- FlaskでのCSSファイルのリンク -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
-    <h1>楽曲レコメンド</h1>
+    <div id="container">
+        <h1>楽曲レコメンド</h1>
 
-    <!-- ジャンル選択フォーム -->
-    <form id="genreForm">
-        <label for="genre">楽曲のジャンルを選択してください</label>
-        <select id="genre" name="genre">
-            <option value="pop">pop</option>
-            <option value="rock">rock</option>
-            <option value="hip-hop">hip-hop</option>
-            <option value="jazz">jazz</option>
-            <option value="edm">edm</option>
-        </select>
-        <button type="submit">決定</button>
-    </form>
+        <!-- ジャンル選択フォーム -->
+        <form id="genreForm">
+            <label for="genre">楽曲のジャンルを選択してください</label>
+            <select id="genre" name="genre">
+                <option value="pop">pop</option>
+                <option value="rock">rock</option>
+                <option value="hip-hop">hip-hop</option>
+                <option value="jazz">jazz</option>
+                <option value="edm">edm</option>
+            </select>
+            <button type="submit">決定</button>
+        </form>
 
-    <!-- 推薦曲の表示セクション -->
-    <div id="recommendationSection">
-        <h2 id="userRecommendationsTitle"></h2>
-        <ul id="userRecommendations"></ul>
+        <!-- 推薦曲の表示セクション -->
+        <div id="recommendationSection">
+            <h2 id="userRecommendationsTitle"></h2>
+            <ul id="userRecommendations"></ul>
 
-        <h2>その他のジャンル</h2>
-        <ul id="otherRecommendations"></ul>
-
-        <h2>気に入った楽曲を選択してください</h2>
-        <select id="selectedTrack"></select>
-        <button id="createPlaylist">決定</button>
-    </div>
-
-    <!-- プレイリストの表示セクション -->
-    <div id="playlistSection">
-        <h2>これらの曲もおすすめです</h2>
-        <ul id="playlist"></ul>
+            <!-- 非表示にする「その他のジャンル」セクション -->
+            <h2 id="otherRecommendationsTitle" style="display: none;">その他のおすすめ</h2>
+            <ul id="otherRecommendations"></ul>
+        </div>
     </div>
 
     <script>
@@ -52,13 +42,11 @@
 
             const genre = document.getElementById('genre').value;
 
-            // リセット処理：以前の推薦曲リストとプレイリストを非表示にし、リストをクリアする
+            // リセット処理：以前の推薦曲リストを非表示にし、リストをクリアする
             document.getElementById('recommendationSection').style.display = 'none';
-            document.getElementById('playlistSection').style.display = 'none';
             document.getElementById('userRecommendations').innerHTML = '';
             document.getElementById('otherRecommendations').innerHTML = '';
-            document.getElementById('selectedTrack').innerHTML = '';
-            document.getElementById('playlist').innerHTML = '';
+            document.getElementById('otherRecommendationsTitle').style.display = 'none'; // 初期状態で非表示
 
             // フォームが送信されたら、推薦曲セクションを表示する
             document.getElementById('recommendationSection').style.display = 'block';
@@ -69,13 +57,9 @@
                 .then(data => {
                     const userRecommendationsList = document.getElementById('userRecommendations');
                     const otherRecommendationsList = document.getElementById('otherRecommendations');
-                    const selectedTrackSelect = document.getElementById('selectedTrack');
 
                     userRecommendationsList.innerHTML = ''; // 前回の結果をクリア
                     otherRecommendationsList.innerHTML = ''; // 前回の結果をクリア
-                    selectedTrackSelect.innerHTML = ''; // 前回の選択肢をクリア
-
-                    let allRecommendations = [];
 
                     // ユーザ選択のジャンルの曲
                     const userRecommendations = data.filter(song => song.source_genre === genre);
@@ -86,7 +70,6 @@
                             const listItem = document.createElement('li');
                             listItem.innerHTML = `<strong>${song.track_name}</strong> by ${song.artist_name} - <a href="${song.track_url}" target="_blank">Listen</a>`;
                             userRecommendationsList.appendChild(listItem);
-                            allRecommendations.push(song);
                         });
                     }
 
@@ -95,21 +78,12 @@
                     if (otherRecommendations.length === 0) {
                         otherRecommendationsList.innerHTML = '<li>No recommendations from other genres.</li>';
                     } else {
+                        // 「その他のおすすめ」見出しを表示
+                        document.getElementById('otherRecommendationsTitle').style.display = 'block';
                         otherRecommendations.forEach(song => {
                             const listItem = document.createElement('li');
                             listItem.innerHTML = `<strong>${song.track_name}</strong> by ${song.artist_name} - <a href="${song.track_url}" target="_blank">Listen</a> (ジャンル： ${song.source_genre})`;
                             otherRecommendationsList.appendChild(listItem);
-                            allRecommendations.push(song);
-                        });
-                    }
-
-                    // プレイリスト作成用に全ての楽曲を選択肢に追加
-                    if (allRecommendations.length > 0) {
-                        allRecommendations.forEach(song => {
-                            const option = document.createElement('option');
-                            option.value = song.id;
-                            option.textContent = `${song.track_name} by ${song.artist_name}`;
-                            selectedTrackSelect.appendChild(option);
                         });
                     }
                 })
@@ -118,32 +92,6 @@
                     document.getElementById('userRecommendations').innerHTML = '<li>Error fetching recommendations.</li>';
                     document.getElementById('otherRecommendations').innerHTML = '<li>Error fetching recommendations.</li>';
                 });
-        });
-
-        // プレイリスト作成ボタンが押されたときの処理
-        document.getElementById('createPlaylist').addEventListener('click', function() {
-            const selectedTrackId = document.getElementById('selectedTrack').value;
-
-            if (selectedTrackId) {
-                fetch(`/create_playlist?selected_track_id=${encodeURIComponent(selectedTrackId)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const playlistList = document.getElementById('playlist');
-                        playlistList.innerHTML = ''; // 以前のプレイリストをクリア
-
-                        data.forEach(song => {
-                            const listItem = document.createElement('li');
-                            listItem.innerHTML = `<strong>${song.track_name}</strong> by ${song.artist_name} - <a href="https://open.spotify.com/track/${song.id}" target="_blank">Listen</a>`;
-                            playlistList.appendChild(listItem);
-                        });
-
-                        // プレイリストセクションを表示
-                        document.getElementById('playlistSection').style.display = 'block';
-                    })
-                    .catch(error => {
-                        console.error('Error creating playlist:', error);
-                    });
-            }
         });
     </script>
 </body>

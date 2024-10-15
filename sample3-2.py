@@ -3,7 +3,7 @@ from sklearn.preprocessing import StandardScaler
 import os
 
 # スケーリングする特徴量
-FEATURES = ['mode', 'acousticness', 'danceability', 'energy', 'valence', 'instrumentalness', 'speechiness']
+FEATURES = ['key', 'energy', 'mode', 'acousticness', 'danceability', 'valence', 'instrumentalness', 'speechiness', 'loudness', 'tempo']
 
 # 各ジャンルのCSVファイル名のリスト
 genres = ['pop', 'rock', 'hip-hop', 'jazz', 'edm', 'reggae', 'metal']
