@@ -11,86 +11,46 @@
     <div id="container">
         <h1>楽曲レコメンド</h1>
 
-        <!-- ジャンル選択フォーム -->
-        <form id="genreForm">
-            <label for="genre">楽曲のジャンルを選択してください</label>
-            <select id="genre" name="genre">
-                <option value="pop">pop</option>
-                <option value="rock">rock</option>
-                <option value="hip-hop">hip-hop</option>
-                <option value="jazz">jazz</option>
-                <option value="edm">edm</option>
-            </select>
-            <button type="submit">決定</button>
-        </form>
+        <!-- 推薦曲取得ボタン -->
+        <button id="getRecommendations">楽曲推薦を取得</button>
 
         <!-- 推薦曲の表示セクション -->
-        <div id="recommendationSection">
-            <h2 id="userRecommendationsTitle"></h2>
+        <div id="recommendationSection" style="display: none;">
+            <h2>おすすめの楽曲</h2>
             <ul id="userRecommendations"></ul>
-
-            <!-- 非表示にする「その他のジャンル」セクション -->
-            <h2 id="otherRecommendationsTitle" style="display: none;">その他のおすすめ</h2>
-            <ul id="otherRecommendations"></ul>
         </div>
     </div>
 
     <script>
-        // ジャンル選択フォームの送信イベント
-        document.getElementById('genreForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            const genre = document.getElementById('genre').value;
-
+        // 「楽曲推薦を取得」ボタンのクリックイベント
+        document.getElementById('getRecommendations').addEventListener('click', function() {
             // リセット処理：以前の推薦曲リストを非表示にし、リストをクリアする
             document.getElementById('recommendationSection').style.display = 'none';
             document.getElementById('userRecommendations').innerHTML = '';
-            document.getElementById('otherRecommendations').innerHTML = '';
-            document.getElementById('otherRecommendationsTitle').style.display = 'none'; // 初期状態で非表示
 
-            // フォームが送信されたら、推薦曲セクションを表示する
-            document.getElementById('recommendationSection').style.display = 'block';
-            document.getElementById('userRecommendationsTitle').innerText = `${genre}のおすすめ`;
-
-            fetch(`/recommend?genre=${encodeURIComponent(genre)}`)
+            // 推薦曲を取得し表示する
+            fetch(`/recommend`)
                 .then(response => response.json())
                 .then(data => {
                     const userRecommendationsList = document.getElementById('userRecommendations');
-                    const otherRecommendationsList = document.getElementById('otherRecommendations');
-
-                    userRecommendationsList.innerHTML = ''; // 前回の結果をクリア
-                    otherRecommendationsList.innerHTML = ''; // 前回の結果をクリア
-
-                    // ユーザ選択のジャンルの曲
-                    const userRecommendations = data.filter(song => song.source_genre === genre);
-                    if (userRecommendations.length === 0) {
-                        userRecommendationsList.innerHTML = '<li>No recommendations from your selected genre.</li>';
+                    
+                    // 推薦曲があるか確認
+                    if (data.length === 0) {
+                        userRecommendationsList.innerHTML = '<li>No recommendations available.</li>';
                     } else {
-                        userRecommendations.forEach(song => {
+                        data.forEach(song => {
                             const listItem = document.createElement('li');
                             listItem.innerHTML = `<strong>${song.track_name}</strong> by ${song.artist_name} - <a href="${song.track_url}" target="_blank">Listen</a>`;
                             userRecommendationsList.appendChild(listItem);
                         });
                     }
 
-                    // 他ジャンルの曲
-                    const otherRecommendations = data.filter(song => song.source_genre !== genre);
-                    if (otherRecommendations.length === 0) {
-                        otherRecommendationsList.innerHTML = '<li>No recommendations from other genres.</li>';
-                    } else {
-                        // 「その他のおすすめ」見出しを表示
-                        document.getElementById('otherRecommendationsTitle').style.display = 'block';
-                        otherRecommendations.forEach(song => {
-                            const listItem = document.createElement('li');
-                            listItem.innerHTML = `<strong>${song.track_name}</strong> by ${song.artist_name} - <a href="${song.track_url}" target="_blank">Listen</a> (ジャンル： ${song.source_genre})`;
-                            otherRecommendationsList.appendChild(listItem);
-                        });
-                    }
+                    // 推薦曲セクションを表示
+                    document.getElementById('recommendationSection').style.display = 'block';
                 })
                 .catch(error => {
                     console.error('Error fetching recommendations:', error);
                     document.getElementById('userRecommendations').innerHTML = '<li>Error fetching recommendations.</li>';
-                    document.getElementById('otherRecommendations').innerHTML = '<li>Error fetching recommendations.</li>';
                 });
         });
     </script>
