@@ -123,7 +123,7 @@ def recommend_top_songs(user_scaled_features, all_genre_data, excluded_ids):
             recommendation['track_url'] = f"https://open.spotify.com/track/{track_id}"
             recommendations.append(recommendation)
             excluded_ids.add(track_id)
-        if len(recommendations) >= 10:
+        if len(recommendations) >= 7:
             break
     return pd.DataFrame(recommendations)
 
