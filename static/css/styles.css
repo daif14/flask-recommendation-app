@@ -60,9 +60,8 @@ li {
 }
 
 li a {
-    color: #000;
-    text-decoration: underline; /* 下線を追加 */
-    font-weight: bold;
+    color: #4CAF50;
+    text-decoration: none;
 }
 
 li a:hover {
