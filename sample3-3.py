@@ -143,7 +143,8 @@ def recommend():
     excluded_ids = set(track_ids)
     all_genre_data = load_all_genre_data()
     recommendations = recommend_top_songs(user_scaled_features, all_genre_data, excluded_ids)
-    
+    print(recommendations.to_json(orient='records'))
+
     return recommendations.to_json(orient='records')
 
 if __name__ == '__main__':
