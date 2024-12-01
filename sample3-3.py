@@ -54,15 +54,17 @@ def index():
 
 @app.route('/login')
 def login():
+    # セッション内の user_history_df をリセット
+    session['user_history_df'] = None
     sp_oauth = create_spotify_oauth()
     auth_url = sp_oauth.get_authorize_url()
     return redirect(auth_url)
 
 @app.route('/logout')
 def logout():
+    # セッションをクリア（user_history_df も含む）
     session.clear()
     return redirect(url_for('login'))
-
 
 @app.route('/callback')
 def callback():
@@ -72,6 +74,8 @@ def callback():
     if code:
         token_info = sp_oauth.get_access_token(code)
         session['token_info'] = token_info
+    # user_history_df をリセット
+    session['user_history_df'] = None
     return redirect(url_for('index'))
 
 def get_spotify_client():
@@ -108,6 +112,21 @@ def get_user_recent_tracks():
     
     return pd.DataFrame(track_info), track_ids
 
+@app.route('/recommend', methods=['GET'])
+def recommend():
+    # user_history_df をリセット
+    session['user_history_df'] = None
+
+    user_history_df, track_ids = get_user_recent_tracks()
+    if user_history_df.empty:
+        return jsonify({"error": "再生履歴が見つかりませんでした"}), 400
+
+    user_scaled_features = scale_user_history(user_history_df)
+    excluded_ids = set(track_ids)
+    all_genre_data = load_all_genre_data()
+    recommendations = recommend_top_songs(user_scaled_features, all_genre_data, excluded_ids)
+    return recommendations.to_json(orient='records')
+
 # ユーザ再生履歴の特徴量をスケーリング
 def scale_user_history(user_history_df):
     user_features = user_history_df[FEATURES]
@@ -132,20 +151,6 @@ def recommend_top_songs(user_scaled_features, all_genre_data, excluded_ids):
         if len(recommendations) >= 7:
             break
     return pd.DataFrame(recommendations)
-
-@app.route('/recommend', methods=['GET'])
-def recommend():
-    user_history_df, track_ids = get_user_recent_tracks()
-    if user_history_df.empty:
-        return jsonify({"error": "再生履歴が見つかりませんでした"}), 400
-
-    user_scaled_features = scale_user_history(user_history_df)
-    excluded_ids = set(track_ids)
-    all_genre_data = load_all_genre_data()
-    recommendations = recommend_top_songs(user_scaled_features, all_genre_data, excluded_ids)
-    print(recommendations.to_json(orient='records'))
-
-    return recommendations.to_json(orient='records')
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 8888))
